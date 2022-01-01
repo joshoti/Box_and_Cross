@@ -124,23 +124,20 @@ def column_check(r_index, c_index, grid):
     column_complete(task(l), c, grid_check)
     return grid_check[c][0][1]
 
-def tiles_count(grid):
-    count = 0
-    for index in range(len(grid)):
-        count += sum([1 for i in grid[index] if i==1])
-    return count
-
 def game_tile(grid):
+    '''counts tiles on game board & gets arrangement of boxes on board'''
     count = []
+    tile_sum = 0
     for i in range(len(grid)):
         line = []
+        tile_sum += sum([1 for i in grid[i] if i==1])
         for j in range(len(grid)):
             if grid[i][j] == 1:
                 line.append(1)
                 continue
             line.append(0)
         count.append(line)
-    return np.array(count)
+    return np.array(count), tile_sum
 
 def input_action():
     '''Receives move and outputs the instruction'''
@@ -219,12 +216,12 @@ def play(r_index, c_index, action, grid, grid_check, neg, pos, cross, tiles):
     print(f'\t0/63\n{grid}')
     while gameover(grid_check) == False:
         r_index, c_index, i_range, instruction = input_block(grid)
-        tile_ingame = tiles_count(grid)
-        if tiles == tile_ingame:
-            if (game_tile(grid) == game_tile(solution())).all() == True:
+        tile_ingame = game_tile(grid)
+        if tiles == tile_ingame[1]:
+            if (tile_ingame[0] == game_tile(solution())[0]).all() == True:
                 break
         check_block(r_index, c_index, i_range, instruction)
-        print(f'\n\t{tile_ingame}/{tiles}')
+        print(f'\n\t{tile_ingame[1]}/{tiles}')
         print(grid)
     print("\n\nYOU WON!\n\n*Playing Exit Animation*")
 
