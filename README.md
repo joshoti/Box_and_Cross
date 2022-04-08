@@ -1,3 +1,3 @@
-# Box_and_Cross
+# Box and Cross
 
 Remake of a game
