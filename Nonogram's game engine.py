@@ -34,19 +34,10 @@ def selectLevel3():
 conditions_pos = {0: [False,1], 1: [False,1], 2: [False,1], 3: [False,1] , 4: [False,1] , 5: [False,1], 6: [False,1], 7: [False,1], 8: [False,1], 9: [True,0]}
 conditions_neg = {0: [True,0], 1: [False,-1], 2: [False,-1], 3: [False,-1], 4: [False,-1], 5: [False,-1], 6: [False,-1], 7: [False,-1], 8: [False,-1], 9: [False,-1]}
 
-def patternPuzzle(grid_check):
-    i = 0
-    print("\n===========  Solution Pattern  ==========")
-    print('Columns:')
-    for k,v in grid_check.items():
-        print(f"{k}-{v[0]}", end='  ')
-        i += 1
-        if i == 5:
-            print()
-        elif i == 10:
-            print('\n\nRows:')
-        elif i == 15:
-            print()    
+def patternPuzzle():
+    print("\n===========  Solution Pattern Hint  ==========")
+    print("Row solution pattern is on the right of the grid")
+    print("Column solution pattern is on the bottom of the grid")
 
 def finish(grid, Row, Col, neg, pos, cross):
     """
@@ -234,11 +225,30 @@ def gameHelp():
     print("1,3 a 1  # Multiple Rows    (vertical)")
     print("1 a,c 1  # Multiple Columns (horizontal)")
 
-def printGrid(tileInGame):
+def printGrid(tileInGame, colPattern):
+    """
+    Prints
+        The number of tiles filled in game
+        The names of the rows (digits) and columns (letters) to the top and left of the grid
+        The row and column solution patterns on the bottom and right of the grid
+    """
     print(f"\n=========  {tileInGame}/{tiles}  =============")
-    print('    a b c d e f g h i j')
+    print('    a b c d e f g h i j') # Column Name
     for r in range(len(grid)):
-        print(f"{r+1: >2} {grid[r]}")        
+        print(f"{r+1: >2} {grid[r]} {grid_check[str(r+1)][0]}") # Row-name  Grid-row  Row-solution-pattern
+    print()
+    for r in range(len(colPattern)):
+        print(f"{'':>2} {colPattern[r]}") # Column-solution-pattern
+
+def columnPattern(grid_check):
+    gridpattern = [[0]*10 for i in range(7)]
+    maxHeight = 0
+    for colIndex, colName in enumerate(range(97,107)):
+        listModel = grid_check[chr(colName)][0]
+        maxHeight = max(maxHeight, len(listModel))
+        for row in range(len(listModel)):
+                gridpattern[row][colIndex] = listModel[row]
+    return gridpattern[:maxHeight]
     
 def input_action():
     """
@@ -267,7 +277,7 @@ def input_action():
         endIndex(int) End range of adjacent cell(s) to act on
         instruction(int) (0 -> Multiple rows, 1 -> Multiple columns, 2 -> One Cell)
     """
-    patternPuzzle(grid_check)
+    patternPuzzle()
     while True:
         print("\n\n=========  INPUT  =========")
         print("Input Hint? /  Need the Grid? / Need the solution pattern?")
@@ -276,9 +286,9 @@ def input_action():
         if values.lower() == 'h':
             gameHelp()
         elif values.lower() == 'g':
-            printGrid(game_tile(grid)[1])
+            printGrid(game_tile(grid)[1], colSolutionPattern)
         elif values.lower() == 'p':
-            patternPuzzle(grid_check)
+            patternPuzzle()
         else:
             break
     if ',' in values:
@@ -381,7 +391,7 @@ def check_block(row, col, endIndex, instruction):
 def play(grid, grid_check, neg, pos, cross, tiles, solution):
     """ Call to Start Game """
     gameHelp()
-    printGrid(0)
+    printGrid(0, colSolutionPattern)
     while True:
         rowIndex, colIndex, EndIndex, instruction = input_block(grid)
         tile_ingame = game_tile(grid)
@@ -389,8 +399,9 @@ def play(grid, grid_check, neg, pos, cross, tiles, solution):
             if (tile_ingame[0] == solution).all(): # Puzzle solved
                 break
         check_block(rowIndex, colIndex, EndIndex, instruction)
-        printGrid(tile_ingame[1])
+        printGrid(tile_ingame[1], colSolutionPattern)
     print("\n\nYOU WON!\n\n*Playing Exit Animation*")
 
 tiles, grid_check, grid, solution = selectLevel1()
+colSolutionPattern = np.array(columnPattern(grid_check))
 play(grid, grid_check, conditions_neg, conditions_pos, cross, tiles, solution)
