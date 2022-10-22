@@ -12,7 +12,7 @@ def selectLevel1():
             [0,0,0,0,0,0,0,0,0,5], [0,0,0,0,0,0,0,0,0,0], [5,5,0,0,0,0,0,0,0,0], [5,0,0,0,0,5,0,0,0,5]]
     solutionGrid = [[0,0,0,0,1,1,1,0,0,0], [0,0,0,1,1,1,1,1,0,0], [0,0,0,0,1,1,1,0,0,0], [0,1,1,1,1,1,1,1,1,0], [0,0,1,1,1,1,1,1,0,0],
                     [1,1,1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1,1,0], [0,1,1,1,1,1,1,1,1,1], [0,0,1,1,1,0,1,1,0,0], [0,1,1,1,0,0,0,1,1,0]]
-    return tiles, grid_check, np.resize(grid, (10,10)), solutionGrid
+    return tiles, grid_check, np.array(grid), solutionGrid
 
 def selectLevel2():
     """ November 3 2021 Daily Challenge """
@@ -24,7 +24,7 @@ def selectLevel2():
             [0,5,0,0,0,0,0,0,5,0], [0,0,5,0,0,0,0,0,0,0], [5,5,0,0,0,0,0,0,0,0], [5,0,5,0,0,5,0,0,5,0]]
     solutionGrid = [[0,1,1,1,1,0,0,1,1,1], [1,1,1,1,1,0,1,1,0,0], [0,0,0,1,1,0,1,1,0,0], [0,0,1,1,1,1,1,0,0,0], [0,0,1,1,1,1,0,0,0,0],
                     [0,1,1,1,1,1,1,1,0,0], [0,0,1,1,1,1,0,0,0,0], [0,0,0,1,1,1,1,1,1,0], [0,0,0,1,1,1,1,1,1,1], [0,0,0,1,1,0,0,0,0,0]]
-    return tiles, grid_check, np.resize(grid, (10,10)), solutionGrid
+    return tiles, grid_check, np.array(grid), solutionGrid
 
 def selectLevel3():
     """ Frame """
@@ -221,9 +221,9 @@ def game_tile(grid):
 def gameHelp():
     print("\n==============  HINT  ==============")
     print("Valid inputs are:")
-    print("1 a 1    # One Cell")
-    print("1,3 a 1  # Multiple Rows    (vertical)")
-    print("1 a,c 1  # Multiple Columns (horizontal)")
+    print("One Cell:                       1 a 1     OR  a 1 1")
+    print("Multiple Rows (vertical):       1,3 a 1   OR  a 1,3 1")
+    print("Multiple Columns (horizontal):  1 a,c 1   OR  a,c 1 1")
 
 def printGrid(tileInGame, colPattern):
     """
@@ -235,10 +235,12 @@ def printGrid(tileInGame, colPattern):
     print(f"\n=========  {tileInGame}/{tiles}  =============")
     print('    a b c d e f g h i j') # Column Name
     for r in range(len(grid)):
-        print(f"{r+1: >2} {grid[r]} {grid_check[str(r+1)][0]}") # Row-name  Grid-row  Row-solution-pattern
+        #       Row-name   Grid-row  Row-solution-pattern
+        print(f"{r+1: >2} {grid[r]} {grid_check[str(r+1)][0]}")
     print()
     for r in range(len(colPattern)):
-        print(f"{'':>2} {colPattern[r]}") # Column-solution-pattern
+        # Column-solution-pattern
+        print(f"{'': >2} {colPattern[r]}") # :>2 controls the right indent level
 
 def columnPattern(grid_check):
     gridpattern = [[0]*10 for i in range(7)]
@@ -276,38 +278,58 @@ def input_action():
         action(int) (1 -> add block, 0 -> empty, 5 -> cross)
         endIndex(int) End range of adjacent cell(s) to act on
         instruction(int) (0 -> Multiple rows, 1 -> Multiple columns, 2 -> One Cell)
-    """
-    patternPuzzle()
-    while True:
-        print("\n\n=========  INPUT  =========")
-        print("Input Hint? /  Need the Grid? / Need the solution pattern?")
-        print("  press H   /     press G     /\t\tpress P\n")
-        values = input("Row(1-10)  Col(a-j)  Action(1,5,0)\n>>> Your Input:  ")
+    """    
+    while True:         
+        values = input("\n\nRow(1-10)  Col(a-j)  Action(1,5,0)\t[ Need Help? Press O ]\n>>> Your Input:  ")
         if values.lower() == 'h':
             gameHelp()
         elif values.lower() == 'g':
             printGrid(game_tile(grid)[1], colSolutionPattern)
         elif values.lower() == 'p':
             patternPuzzle()
+        elif values.lower() == 'o':
+            print("\n\n=========  INPUT  =========")
+            print("Input Hint? /  Need the Grid? / Need the solution pattern?")
+            print("  press H   /     press G     /\t\tpress P")
+        elif len(values) < 5:
+            print("Input not recognised")
+            continue
         else:
             break
     if ',' in values:
         separator = values.index(',')
         a, b, c, d = (values[:separator] + ' ' + values[separator+1:]).split()
-        if separator < 3: # Multiple rows (vertical)
-            rowStartIndex = int(a)-1
-            rowEndIndex = int(b)-1
-            columnIndex = ord(c)-97
-            action = int(d)
+        action = int(d)
+        
+        # Multiple rows (vertical)
+        if values[separator-1].isnumeric(): 
+            if separator < 3: # Eg: 1,3 a 1
+                rowStartIndex = int(a)-1 
+                rowEndIndex = int(b)-1
+                columnIndex = ord(c)-97                
+            else: # Eg: a 1,3 1
+                columnIndex = ord(a)-97
+                rowStartIndex = int(b)-1
+                rowEndIndex = int(c)-1
             return rowStartIndex, columnIndex, action, rowEndIndex, 0
-        else: # Multiple columns (horizontal)
-            rowIndex = int(a)-1
-            columnStartIndex = ord(b)-97
-            columnEndIndex = ord(c)-97
-            action = int(d)
+
+        # Multiple columns (horizontal)
+        else: 
+            if separator < 3: # Eg: a,c 1 1
+                columnStartIndex = ord(a)-97
+                columnEndIndex = ord(b)-97
+                rowIndex = int(c)-1
+            else: # Eg: 1 a,c 1
+                rowIndex = int(a)-1
+                columnStartIndex = ord(b)-97
+                columnEndIndex = ord(c)-97
             return rowIndex, columnStartIndex, action, columnEndIndex, 1
-    rowIndex, columnIndex, action = values.split() # One Cell
-    return int(rowIndex)-1, ord(columnIndex)-97, int(action), 0, 2
+        
+    # One Cell
+    rowIndex, columnIndex, action = values.split() 
+    if rowIndex.isalpha(): # rowIndex is colName. Eg: e 1 1
+        return int(columnIndex)-1, ord(rowIndex)-97, int(action), 0, 2
+    return int(rowIndex)-1, ord(columnIndex)-97, int(action), 0, 2 # rowIndex is rowName. Eg: 1 e 1
 
 def input_response(Row, Col, action, EndIndex, Instruction, grid):
     """
@@ -390,7 +412,9 @@ def check_block(row, col, endIndex, instruction):
         
 def play(grid, grid_check, neg, pos, cross, tiles, solution):
     """ Call to Start Game """
-    gameHelp()
+    gameHelp()    
+    patternPuzzle()
+    input("\nHit Enter to Start")
     printGrid(0, colSolutionPattern)
     while True:
         rowIndex, colIndex, EndIndex, instruction = input_block(grid)
