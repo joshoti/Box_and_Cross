@@ -230,9 +230,9 @@ def game_tile(grid):
 def gameHelp():
     print("\n==============  HINT  ==============")
     print("Valid inputs are:")
-    print("1 1 1    # One Cell")
-    print("1,3 1 1  # Multiple Rows    (vertical)")
-    print("1 1,3 1  # Multiple Columns (horizontal)")
+    print("1 a 1    # One Cell")
+    print("1,3 a 1  # Multiple Rows    (vertical)")
+    print("1 a,c 1  # Multiple Columns (horizontal)")
 
 def printGrid(tileInGame):
     print(f"\n=========  {tileInGame}/{tiles}  =============")
@@ -245,20 +245,20 @@ def input_action():
     Receives move and outputs the instruction
 
     Example Use
-        >>> Row(1-10)  Col(1-10)  Action(1,5,0) # One cell move
-        1 1 1     # User Input
+        >>> Row(1-10)  Col(a-j)  Action(1,5,0) # One cell move
+        1 a 1     # User Input
         returns (0, 0, 1, 0, 2)
-        Translation: Apply 1 to Row 1 column 1
+        Translation: Apply 1 to Row 1 column a
 
         >>> Row(1-10)  Col(1-10)  Action(1,5,0) # Multiple row move
-        1,3 1 1   # User Input
+        1,3 a 1   # User Input
         returns (0, 0, 1, 2, 0)
-        Translation: Apply 1 to Row 1-3 on column 1
+        Translation: Apply 1 to Row 1-3 on column a
 
         >>> Row(1-10)  Col(1-10)  Action(1,5,0) # Multiple column move
-        1 1,3 1   # User Input
+        1 a,c 1   # User Input
         returns (0, 0, 1, 2, 1)
-        Translation: Apply 1 to Column 1-3 on row 1
+        Translation: Apply 1 to Column a-c on row 1
 
     Returns
         row(int) Row of cell(s) on grid
@@ -272,7 +272,7 @@ def input_action():
         print("\n\n=========  INPUT  =========")
         print("Input Hint? /  Need the Grid? / Need the solution pattern?")
         print("  press H   /     press G     /\t\tpress P\n")
-        values = input("Row(1-10)  Col(1-10)  Action(1,5,0)\n>>> Your Input:  ")
+        values = input("Row(1-10)  Col(a-j)  Action(1,5,0)\n>>> Your Input:  ")
         if values.lower() == 'h':
             gameHelp()
         elif values.lower() == 'g':
@@ -287,17 +287,17 @@ def input_action():
         if separator < 3: # Multiple rows (vertical)
             rowStartIndex = int(a)-1
             rowEndIndex = int(b)-1
-            columnIndex = int(c)-1
+            columnIndex = ord(c)-97
             action = int(d)
             return rowStartIndex, columnIndex, action, rowEndIndex, 0
         else: # Multiple columns (horizontal)
             rowIndex = int(a)-1
-            columnStartIndex = int(b)-1
-            columnEndIndex = int(c)-1
+            columnStartIndex = ord(b)-97
+            columnEndIndex = ord(c)-97
             action = int(d)
             return rowIndex, columnStartIndex, action, columnEndIndex, 1
     rowIndex, columnIndex, action = values.split() # One Cell
-    return int(rowIndex)-1, int(columnIndex)-1, int(action), 0, 2
+    return int(rowIndex)-1, ord(columnIndex)-97, int(action), 0, 2
 
 def input_response(Row, Col, action, EndIndex, Instruction, grid):
     """
