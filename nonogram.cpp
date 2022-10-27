@@ -208,27 +208,6 @@ vector<string> splitString(string sentence, string delimiter = " ")
 	return words;
 }
 
-vector<string> splitString2(string sentence, string delimiter = " ")
-{
-	string word;
-	vector<string> words;
-	for (auto elm : sentence)
-	{
-		if (elm != ' ')
-			word += elm;
-		else 
-		{
-			if (word.size() > 0)
-				words.push_back(word);
-			word = "";
-		}
-
-	}
-	if (word.size() > 0)
-		words.push_back(word);
-	return words;
-}
-
 void printVector(vector<int> Row)
 {
 	cout << " [ ";
