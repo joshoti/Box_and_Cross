@@ -279,7 +279,6 @@ inputInfo inputHandler(levelInfo &game)
 		 // Receiving raw input and change to lowercase
 		 string raw, input;
 		 receiveRawInput(raw, input);
-		 cout << '1' << endl;
 
 		 while (input.size() < 5)
 		 {
@@ -291,7 +290,6 @@ inputInfo inputHandler(levelInfo &game)
 				 printGrid(game);
 			 else if (input == "s")
 				 solutionHelp();
-			 cout << '2' << endl;
 			 receiveRawInput(raw, input = "");			 
 		 }
 		 int separator = input.find(',');
