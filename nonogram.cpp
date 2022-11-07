@@ -1,38 +1,21 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <json/json.h>
 #define NEWLINE cout << endl;
 #define NEWLINE2 cout << "\n\n";
 #define printGrid(x) printVec2(x)
 #define CROSS_CELL(row,col) gameData.grid[row][col] = 5
 #define CELL(row,col) gameData.grid[row][col]
-#define MAXLEVEL 2
 #define LEVEL(x) x
-#define CHAR(x) to_string((x)%10)[0]
-#define ROWPattern(row) gridPattern[CHAR(row)].pattern
-#define ROWIsFilled(row) gridPattern[CHAR(row)].isFilled
-#define COLPattern(col) gridPattern[char(col+97)].pattern
-#define COLIsFilled(col) gridPattern[char(col+97)].isFilled
+#define CHAR(x) to_string(x)
+#define ROWPattern(row) gridPattern[CHAR(row)][0]
+#define ROWIsFilled(row) gridPattern[CHAR(row)][1]
+#define COLPattern(col) gridPattern[colName[col]][0]
+#define COLIsFilled(col) gridPattern[colName[col]][1]
 using namespace std;
-
-struct gridCheck {
-	/*
-	Holds pattern that completes row or column
-
-	For Clarity
-		<- -> means "followed by whitespace(s)"
-		
-	Example
-		'a' -> {1,3,1}, False
-
-		Translation:
-			Column 'a' has a pattern of 1 tile  <- -> 3 tiles  <- -> 1 tile 
-			And hasn't been completed on the grid
-	*/
-	vector<int> pattern = {};
-	bool isFilled;
-};
 
 struct levelInfo {
 	/*
@@ -40,9 +23,10 @@ struct levelInfo {
 	
 	Variables
 		tiles:         number of tiles in the correct solution
-		level:         stage to play
 		tileInGame:    number of tiles currently placed in game
 		shape:         of grid (5x5, 10x10, 15x15)
+		wideBase:	   if colPattern aligns with the grid
+		colName:	   maps index to [string] letter
 		gridPattern:   solution patterns for rows & columns
 		grid:          the grid to be solved
 		solutionGrid:  grid of the correct solution
@@ -52,27 +36,31 @@ struct levelInfo {
 		extractColumnPattern:  to extract grid from gridPattern map
 		Generate:              selects all info regarding a stage
 	*/
-	int tiles, level, tileInGame, shape;
-	unordered_map<char, gridCheck> gridPattern;
-	vector<vector<int>> grid;
-	vector<vector<int>> solutionGrid;
-	vector<vector<int>> colPattern;
+	int tiles, tileInGame, shape;
+	bool wideBase = false;
+	unordered_map<int, string> colName = { {0,"a"}, {1,"b"}, {2,"c"}, {3,"d"}, {4,"e"},
+										{5,"f"}, {6,"g"}, {7,"h"}, {8,"i"}, {9,"j"},
+										{10,"k"}, {11,"l"}, {12,"m"}, {13,"n"}, {14,"o"} };
+	Json::Value gridPattern;
+	Json::Value grid;
+	Json::Value solutionGrid;
+	Json::Value colPattern;
 
-	levelInfo(int levelPicker)
-	{
-		level = levelPicker;
+	levelInfo(Json::Value levelParameters)
+	{		
 		tileInGame = 0;
+		loadData(levelParameters);
 	}
-	void extractColumnPattern(unordered_map<char, gridCheck> &gridPattern, vector<vector<int>> &columnPattern, int shape)
+	void extractColumnPattern(Json::Value &columnPattern)
 	{
 		// Create empty grid of 0's for filling
-		vector<vector<int>> dummyGrid;
+		Json::Value dummyGrid;
 		for (int r = 0; r < shape / 2; r++)
 		{
-			vector<int> row = {};
+			Json::Value row;
 			for (int c = 0; c < shape; c++)
-				row.push_back(0);
-			dummyGrid.push_back(row);
+				row.append(0);
+			dummyGrid.append(row);
 		}
 
 		// Writing rows [from gridPattern] to [the dummyGrid] columns
@@ -80,81 +68,34 @@ struct levelInfo {
 		for (int col = 0; col < shape; col++)
 		{
 			int row = 0;
-			vector<int> column = COLPattern(col);
-			int size = column.size();
+			Json::Value column = COLPattern(col);
+			//int size = ;
 			for (auto element : column)
 			{
 				dummyGrid[row][col] = element;
 				row++;
+
+				// Checking if colPattern will align with grid
+				if (!(wideBase) && element >= 10)
+					wideBase = true;
 			}		
 			// To know the maxHeight of the grid
-			if (size > maxHeight)
-				maxHeight = size;
+			if ((int)column.size() > maxHeight)
+				maxHeight = column.size();
 		}
 
 		// Slicing the used ranges
 		for (int rows = 0; rows < maxHeight; rows++)
-			columnPattern.push_back(dummyGrid[rows]);
-	}
-	void Generate()
-	{
-		switch (level)
-		{
-		case 1: // Medium difficulty
-			tiles = 63;
-			shape = 10;
-			grid = { {5, 5, 5, 5, 0, 0, 0, 5, 5, 5}, {0, 0, 5, 0, 0, 0, 0, 0, 5, 0}, {5, 0, 0, 0, 0, 0, 0, 0, 0, 5},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0, 5}, {5, 5, 0, 0, 0, 0, 0, 0, 5, 5}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0, 5}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {5, 5, 0, 0, 0, 0, 0, 0, 0, 0}, {5, 0, 0, 0, 0, 5, 0, 0, 0, 5} };
-			gridPattern = { 
-			{'a', gridCheck{ {2}, false }}, {'b', gridCheck{ {1, 3, 1}, false}}, {'c', gridCheck{ {7}, false}}, {'d', gridCheck{ {1, 7}, false }}, 
-			{'e', gridCheck{ {9}, false }}, {'f', gridCheck{ {8}, false }}, {'g', gridCheck{ {9}, false }}, {'h', gridCheck{ {1, 7}, false }}, 
-			{'i', gridCheck{ {1, 3, 1}, false }}, {'j', gridCheck{ {1, 1}, false }}, {'1', gridCheck{{3}, false }}, {'2', gridCheck{{5}, false }}, 
-			{'3', gridCheck{{3}, false }}, {'4', gridCheck{{8}, false }}, {'5', gridCheck{{6}, false }}, {'6', gridCheck{{10}, false }}, 
-			{'7', gridCheck{{9}, false }}, {'8', gridCheck{{9}, false }}, {'9', gridCheck{{3, 2}, false }}, {'0', gridCheck{{3, 2}, false }} 
-			};
-			solutionGrid = {{0, 0, 0, 0, 1, 1, 1, 0, 0, 0}, {0, 0, 0, 1, 1, 1, 1, 1, 0, 0}, {0, 0, 0, 0, 1, 1, 1, 0, 0, 0}, 
-			{0, 1, 1, 1, 1, 1, 1, 1, 1, 0}, {0, 0, 1, 1, 1, 1, 1, 1, 0, 0}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 
-			{1, 1, 1, 1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {0, 0, 1, 1, 1, 0, 1, 1, 0, 0}, {0, 1, 1, 1, 0, 0, 0, 1, 1, 0}};
-			extractColumnPattern(gridPattern, colPattern, shape);
-			break;
-
-		case 2: // Nov 3 2021 Daily Challenge
-			tiles = 53;
-			shape = 10;
-			grid = {{5, 0, 0, 0, 0, 5, 5, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 5}, {5, 0, 0, 0, 0, 5, 0, 0, 0, 5},
-			{0, 5, 0, 0, 0, 0, 0, 5, 0, 5}, {5, 5, 0, 0, 0, 0, 0, 0, 5, 5}, {0, 0, 0, 0, 0, 0, 0, 0, 5, 0},
-			{0, 5, 0, 0, 0, 0, 0, 0, 5, 0}, {0, 0, 5, 0, 0, 0, 0, 0, 0, 0}, {5, 5, 0, 0, 0, 0, 0, 0, 0, 0}, {5, 0, 5, 0, 0, 5, 0, 0, 5, 0}};
-			gridPattern = {
-			{'a', gridCheck{ {1}, false }}, {'b', gridCheck{ {2, 1}, false }}, {'c', gridCheck{ {2, 4}, false }}, {'d', gridCheck{ {10}, false }}, 
-			{'e', gridCheck{ {10}, false }}, {'f', gridCheck{ {6}, false }}, {'g', gridCheck{ {3, 1, 2}, false }}, {'h', gridCheck{ {3, 1, 2}, false }}, 
-			{'i', gridCheck{ {1, 2}, false }}, {'j', gridCheck{ {1, 1}, false }}, {'1', gridCheck{ {4, 3}, false }}, {'2', gridCheck{ {5, 2}, false }}, 
-			{'3', gridCheck{ {2, 2}, false }}, {'4', gridCheck{ {5}, false }}, {'5', gridCheck{ {4}, false }}, {'6', gridCheck{ {7}, false }}, 
-			{'7', gridCheck{ {4}, false }}, {'8', gridCheck{ {6}, false }}, {'9', gridCheck{ {7}, false }}, {'0', gridCheck{ {2}, false }}
-			};
-			solutionGrid = {{0, 1, 1, 1, 1, 0, 0, 1, 1, 1}, {1, 1, 1, 1, 1, 0, 1, 1, 0, 0}, {0, 0, 0, 1, 1, 0, 1, 1, 0, 0}, 
-			{0, 0, 1, 1, 1, 1, 1, 0, 0, 0}, {0, 0, 1, 1, 1, 1, 0, 0, 0, 0},	{0, 1, 1, 1, 1, 1, 1, 1, 0, 0}, {0, 0, 1, 1, 1, 1, 0, 0, 0, 0}, 
-			{0, 0, 0, 1, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 1, 1, 1, 1, 1, 1, 1}, {0, 0, 0, 1, 1, 0, 0, 0, 0, 0}};
-			extractColumnPattern(gridPattern, colPattern, shape);
-			break;
-
-		case 3: // Empty Frame
-			tiles = 0;
-			grid = { {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0} };
-			gridPattern = {
-			{'a', gridCheck{ {}, false }}, {'b', gridCheck{ {}, false }}, {'c', gridCheck{ {}, false }}, {'d', gridCheck{ {}, false }},
-			{'e', gridCheck{ {}, false }}, {'f', gridCheck{ {}, false }}, {'g', gridCheck{ {}, false }}, {'h', gridCheck{ {}, false }},
-			{'i', gridCheck{ {}, false }}, {'j', gridCheck{ {}, false }}, {'1', gridCheck{ {}, false }}, {'2', gridCheck{ {}, false }},
-			{'3', gridCheck{ {}, false }}, {'4', gridCheck{ {}, false }}, {'5', gridCheck{ {}, false }}, {'6', gridCheck{ {}, false }},
-			{'7', gridCheck{ {}, false }}, {'8', gridCheck{ {}, false }}, {'9', gridCheck{ {}, false }}, {'0', gridCheck{ {}, false }}
-			};
-			solutionGrid = { {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0} };
-			break;
-		} 
+			columnPattern.append(dummyGrid[rows]);
+	}	
+	void loadData(Json::Value &levelParameters)
+	{			
+		tiles = levelParameters["tiles"].asInt();
+		shape = levelParameters["shape"].asInt();
+		gridPattern = levelParameters["grid_check"];
+		grid = levelParameters["grid"];
+		solutionGrid = levelParameters["solutionGrid"];
+		extractColumnPattern(colPattern);
 	}
 };
 struct inputInfo {
@@ -208,15 +149,25 @@ vector<string> splitString(string sentence, string delimiter = " ")
 	return words;
 }
 
-void printVector(vector<int> Row)
+void printVector(Json::Value Row, bool extraSpacing=false)
 {
+	string indent1 = " ", indent2 = "  ";
+	if (extraSpacing)
+	{
+		indent1 = "  ";
+		indent2 = "   ";
+	}
 	cout << " [ ";
 	for (auto element : Row)
 	{
-		if (element != 0)
-			cout << element << " ";
+		if (element != 0) {
+			if (element < 10)
+				cout << element << indent1;
+			else
+				cout << element << " ";
+		}
 		else
-			cout << "  ";
+			cout << indent2;
 	}
 	cout << "]";
 }
@@ -255,11 +206,19 @@ void printVec2(levelInfo gameData)
 	}
 	NEWLINE
 
+	// Display col names if not aligned
+	if (gameData.wideBase) {
+		cout << indent1;
+		for (int i = 0; i < gameData.shape; i++)
+			cout << char(i + 97) << "  ";
+		NEWLINE
+	}
+
 	// Display Column Solution Pattern
 	for (auto rowOfPatterns : gameData.colPattern)
 	{
 		cout << indent2;
-		printVector(rowOfPatterns);
+		printVector(rowOfPatterns, gameData.wideBase);
 		NEWLINE
 	}
 }
@@ -385,7 +344,7 @@ void useMove(levelInfo &gameData, int row, int col, int action)
 
 }
  
-vector<int> inGamePattern(vector<int> array) 
+Json::Value inGamePattern(Json::Value array)
 {
 	 /*
 	 Returns the tile pattern of row/column in the game
@@ -394,14 +353,14 @@ vector<int> inGamePattern(vector<int> array)
 		array: row or column
 	 */
 	 int consecutiveCount = 0;
-	 vector<int> tilePattern;
+	 Json::Value tilePattern;
 	 for (auto element : array)
 	 {
 		 if (element != 1)
 		 {
 			 if (consecutiveCount > 0)
 			 {
-				 tilePattern.push_back(consecutiveCount);
+				 tilePattern.append(consecutiveCount);
 				 consecutiveCount = 0;
 			 }
 		 }
@@ -409,14 +368,14 @@ vector<int> inGamePattern(vector<int> array)
 			 consecutiveCount++;
 	 }
 	 if (consecutiveCount > 0)
-		 tilePattern.push_back(consecutiveCount);
+		 tilePattern.append(consecutiveCount);
 	 return tilePattern;
 }
 
 bool rowCheck(levelInfo &gameData, int row, int col) 
 {
 	// Row in game to check
-	vector<int> rowArray = gameData.grid[row];
+	Json::Value rowArray = gameData.grid[row];
 
 	// if Pattern in Game == solutionPattern
 	if (inGamePattern(rowArray) == gameData.ROWPattern(row + 1))
@@ -429,10 +388,12 @@ bool rowCheck(levelInfo &gameData, int row, int col)
 }
 bool columnCheck(levelInfo &gameData, int row, int col)
 {
+	unordered_map<int, string> &colName = gameData.colName;
+
 	// Col in game to check
-	vector<int> colArray;
+	Json::Value colArray;
 	for (int r = 0; r < gameData.shape; r++)
-		colArray.push_back(CELL(r,col));
+		colArray.append(CELL(r,col));
 
 	// if Pattern in Game == solutionPattern
 	if (inGamePattern(colArray) == gameData.COLPattern(col))
@@ -594,23 +555,26 @@ void gameHandler(levelInfo &gameData, inputInfo input)
 
 int playGame(int level)
 {	
-	if (level < 1 || level > MAXLEVEL)
+	ifstream data("src/nonogramstages.json", ifstream::binary);
+	Json::Value levelData;
+	data >> levelData;
+
+	if (level < 1 || level > (int)levelData.size())
 	{
-		cout << "Select a level between 1-" << MAXLEVEL << "  ";
+		cout << "Select a level between 1-" << levelData.size() << "  ";
 		cin >> level;
-		while (!cin || level < 1 || level > MAXLEVEL)
+		while (!cin || level < 1 || level > (int)levelData.size())
 		{
 			cin.clear();
 			cin.ignore(256, '\n');
-			cout << "Select a level between 1-" << MAXLEVEL << "  ";
+			cout << "Select a level between 1-" << levelData.size() << "  ";
 			cin >> level;
 		}
 	}
 	cout << "\n\tHit Enter to Start game...";
 	system("pause > 0");
 
-	levelInfo game(level);
-	game.Generate();
+	levelInfo game(levelData[to_string(level)]);
 	printGrid(game);
 	cin.ignore(256, '\n'); // To remove the 'select level' input
 	while (game.tileInGame < game.tiles)

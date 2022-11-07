@@ -1,38 +1,29 @@
 """ Nonogram's workings """
 import numpy as np
 
-cross = {0: 5, 1: 1, 5:5}
-def selectLevel1():
-    """ Stage 56: Medium Difficulty for test """
-    tiles = 63
-    grid_check = {'a': [[2], False], 'b': [[1, 3, 1], False], 'c': [[7], False], 'd': [[1, 7], False], 'e': [[9], False], 'f': [[8], False], 'g': [[9], False], 'h': [[1, 7], False], 'i': [[1, 3, 1], False], 'j': [[1, 1], False],
-              '1': [[3], False], '2': [[5], False], '3': [[3], False], '4': [[8], False], '5': [[6], False], '6': [[10], False], '7': [[9], False], '8': [[9], False], '9': [[3, 2], False], '10': [[3, 2], False]}
-    grid = [[5,5,5,5,0,0,0,5,5,5], [0,0,5,0,0,0,0,0,5,0], [5,0,0,0,0,0,0,0,0,5],
-            [0,0,0,0,0,0,0,0,0,5], [5,5,0,0,0,0,0,0,5,5], [0,0,0,0,0,0,0,0,0,0],
-            [0,0,0,0,0,0,0,0,0,5], [0,0,0,0,0,0,0,0,0,0], [5,5,0,0,0,0,0,0,0,0], [5,0,0,0,0,5,0,0,0,5]]
-    solutionGrid = [[0,0,0,0,1,1,1,0,0,0], [0,0,0,1,1,1,1,1,0,0], [0,0,0,0,1,1,1,0,0,0], [0,1,1,1,1,1,1,1,1,0], [0,0,1,1,1,1,1,1,0,0],
-                    [1,1,1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1,1,0], [0,1,1,1,1,1,1,1,1,1], [0,0,1,1,1,0,1,1,0,0], [0,1,1,1,0,0,0,1,1,0]]
-    return tiles, grid_check, np.array(grid), solutionGrid
+def loadData():
+    """
+    Creates the database
+    """
+    import sqlite3
+    with open (r'C:\Users\Joshua\Documents\nonogramstage.sql') as file:
+        sqlfile = file.read()
+    SQLconnector = sqlite3.connect(r'C:\Users\Joshua\Documents\leveldatabase.db')
+    cursor = SQLconnector.cursor()
+    cursor.execute(f"DROP TABLE IF EXISTS level;")
+    for command in sqlfile.split(';'):
+        cursor.execute(command)
+    return cursor
 
-def selectLevel2():
-    """ November 3 2021 Daily Challenge """
-    tiles = 53
-    grid_check = {'a': [[1], False], 'b': [[2,1], False], 'c': [[2,4], False], 'd': [[10], False], 'e': [[10], False], 'f': [[6], False], 'g': [[3,1,2], False], 'h': [[3,1,2], False], 'i': [[1,2], False], 'j': [[1,1], False],
-                  '1': [[4,3], False], '2': [[5,2], False], '3': [[2,2], False], '4': [[5], False], '5': [[4], False], '6': [[7], False], '7': [[4], False], '8': [[6], False], '9': [[7], False], '10': [[2], False]}
-    grid = [[5,0,0,0,0,5,5,0,0,0], [0,0,0,0,0,0,0,0,0,5], [5,0,0,0,0,5,0,0,0,5],
-            [0,5,0,0,0,0,0,5,0,5], [5,5,0,0,0,0,0,0,5,5], [0,0,0,0,0,0,0,0,5,0],
-            [0,5,0,0,0,0,0,0,5,0], [0,0,5,0,0,0,0,0,0,0], [5,5,0,0,0,0,0,0,0,0], [5,0,5,0,0,5,0,0,5,0]]
-    solutionGrid = [[0,1,1,1,1,0,0,1,1,1], [1,1,1,1,1,0,1,1,0,0], [0,0,0,1,1,0,1,1,0,0], [0,0,1,1,1,1,1,0,0,0], [0,0,1,1,1,1,0,0,0,0],
-                    [0,1,1,1,1,1,1,1,0,0], [0,0,1,1,1,1,0,0,0,0], [0,0,0,1,1,1,1,1,1,0], [0,0,0,1,1,1,1,1,1,1], [0,0,0,1,1,0,0,0,0,0]]
-    return tiles, grid_check, np.array(grid), solutionGrid
-
-def selectLevel3():
-    """ Frame """
-    grid_check = {'a': [[], False], 'b': [[], False], 'c': [[], False], 'd': [[], False], 'e': [[], False], 'f': [[], False], 'g': [[], False], 'h': [[], False], 'i': [[], False], 'j': [[], False],
-                  '1': [[], False], '2': [[], False], '3': [[], False], '4': [[], False], '5': [[], False], '6': [[], False], '7': [[], False], '8': [[], False], '9': [[], False], '10': [[], False]}
-
-conditions_pos = {0: [False,1], 1: [False,1], 2: [False,1], 3: [False,1] , 4: [False,1] , 5: [False,1], 6: [False,1], 7: [False,1], 8: [False,1], 9: [True,0]}
-conditions_neg = {0: [True,0], 1: [False,-1], 2: [False,-1], 3: [False,-1], 4: [False,-1], 5: [False,-1], 6: [False,-1], 7: [False,-1], 8: [False,-1], 9: [False,-1]}
+def loadLevel(number, cursor):
+    """
+    Queries the database
+    """
+    while (number <= 0) or  (number > cursor.lastrowid):
+        number = int(input(f"Select another number between 1-{cursor.lastrowid}  "))
+    import json
+    levelJSON = cursor.execute(f"select information from level where id = {number};")    
+    return json.loads(levelJSON.fetchone()[0])
 
 def patternPuzzle():
     print("\n===========  Solution Pattern Hint  ==========")
@@ -69,7 +60,7 @@ def finish(grid, Row, Col, neg, pos, cross):
         # Update horizontal markers
         left_Is_Done, right_Is_Done = neg[left][0], pos[right][0]
         left, right = left + neg[left][1], right + pos[right][1]
-    print(f'\nRow {Row+1} and Column {Col+1} finished')
+    print(f'\nRow "{Row+1}" and Column "{chr(Col+97)}" Finished!')
 
 def rowFinish(grid, Row, Col, neg, pos, cross):
     """
@@ -85,7 +76,7 @@ def rowFinish(grid, Row, Col, neg, pos, cross):
         # Update horizontal markers
         left_Is_Done, right_Is_Done = neg[left][0], pos[right][0]
         left, right = left + neg[left][1], right + pos[right][1]
-    print(f'\nRow {Row+1} finished')
+    print(f'\nRow "{Row+1}" Finished!')
 
 def columnFinish(grid, Row, Col, neg, pos, cross):
     """
@@ -101,7 +92,7 @@ def columnFinish(grid, Row, Col, neg, pos, cross):
         # Update vertical markers
         up_Is_Done, down_Is_Done = neg[up][0], pos[down][0]
         up, down = up + neg[up][1], down + pos[down][1]
-    print(f'\nColumn {Col+1} finished')
+    print(f'\nColumn "{chr(Col+97)}" Finished!')
 
 def task(array):
     """
@@ -169,8 +160,8 @@ def rowCheck(rowIndex, columnIndex, grid):
     """
     rowName = str(rowIndex+1)
     rowArray = grid[rowIndex]
-    rowComplete(task(rowArray), rowName, grid_check)
-    return grid_check[rowName][1]
+    rowComplete(task(rowArray), rowName, gamedata['grid_check'])
+    return gamedata['grid_check'][rowName][1]
 
 def columnCheck(rowIndex, columnIndex, grid):
     """
@@ -192,8 +183,8 @@ def columnCheck(rowIndex, columnIndex, grid):
     colName, columnArray = chr(columnIndex + 97), []
     for r in range(len(grid)):
         columnArray.append(grid[r][columnIndex])
-    columnComplete(task(columnArray), colName, grid_check)
-    return grid_check[colName][1]
+    columnComplete(task(columnArray), colName, gamedata['grid_check'])
+    return gamedata['grid_check'][colName][1]
 
 def game_tile(grid):
     """
@@ -225,32 +216,47 @@ def gameHelp():
     print("Multiple Rows (vertical):       1,3 a 1   OR  a 1,3 1")
     print("Multiple Columns (horizontal):  1 a,c 1   OR  a,c 1 1")
 
-def printGrid(tileInGame, colPattern):
+def printGrid(tileInGame, colPattern, wideColBase):
     """
     Prints
         The number of tiles filled in game
         The names of the rows (digits) and columns (letters) to the top and left of the grid
         The row and column solution patterns on the bottom and right of the grid
     """
-    print(f"\n=========  {tileInGame}/{tiles}  =============")
+    print(f"\n=========  {tileInGame}/{gamedata['tiles']}  =============")
     print('    a b c d e f g h i j') # Column Name
-    for r in range(len(grid)):
-        #       Row-name   Grid-row  Row-solution-pattern
-        print(f"{r+1: >2} {grid[r]} {grid_check[str(r+1)][0]}")
+    for r in range(len(gamedata['grid'])):
+        #       Row-name         Grid-row              Row-solution-pattern
+        print(f"{r+1: >2} {gamedata['grid'][r]}  {gamedata['grid_check'][str(r+1)][0]}")
     print()
-    for r in range(len(colPattern)):
+
+    if wideColBase:
+        print("".ljust(3), end="")
+        for i in range(gamedata['shape']):
+            print(chr(i+97), end="  ")
+        print()
+        print(colPattern)
+    else:
         # Column-solution-pattern
-        print(f"{'': >2} {colPattern[r]}") # :>2 controls the right indent level
+        for r in range(len(colPattern)):            
+            print(f"{'': >2} {colPattern[r]}") # :>2 controls the right indent level"""
 
 def columnPattern(grid_check):
-    gridpattern = [[0]*10 for i in range(7)]
+    """
+    Variable
+        gamedata['shape']:   can be 5x5, 10x10, or 15x15
+    """
+    gridpattern = [[0]*gamedata['shape'] for i in range(gamedata['shape']//2)]
     maxHeight = 0
-    for colIndex, colName in enumerate(range(97,107)):
-        listModel = grid_check[chr(colName)][0]
+    wideColBase = False
+    for col in range(gamedata['shape']):
+        listModel = grid_check[chr(col+97)][0]
         maxHeight = max(maxHeight, len(listModel))
         for row in range(len(listModel)):
-                gridpattern[row][colIndex] = listModel[row]
-    return gridpattern[:maxHeight]
+                gridpattern[row][col] = listModel[row]
+                if not(wideColBase) and listModel[row] >= 10:
+                    wideColBase = True                    
+    return gridpattern[:maxHeight], wideColBase
     
 def input_action():
     """
@@ -284,7 +290,7 @@ def input_action():
         if values.lower() == 'h':
             gameHelp()
         elif values.lower() == 'g':
-            printGrid(game_tile(grid)[1], colSolutionPattern)
+            printGrid(game_tile(gamedata['grid'])[1], colSolutionPattern, wideColBase)
         elif values.lower() == 'p':
             patternPuzzle()
         elif values.lower() == 'o':
@@ -334,9 +340,9 @@ def input_action():
 def input_response(Row, Col, action, EndIndex, Instruction, grid):
     """
     Effects instruction on the game board and outputs instruction for checking move and counting boxes
-    """
-    if EndIndex > 9:
-        EndIndex = 9
+    """    
+    if EndIndex > gamedata['shape']-1:
+        EndIndex = gamedata['shape']-1
     if Instruction == 1: # Multiple columns (horizontal)
         if list(grid[Row][Col:EndIndex+1]) == [action] * (EndIndex-Col+1):
             grid[Row][Col:EndIndex+1] = [0] * (EndIndex-Col+1)
@@ -379,53 +385,74 @@ def check_block(row, col, endIndex, instruction):
     """
     if instruction == 2: # One Cell
         # Row and Column Check
-        row_Is_Complete = rowCheck(row, col, grid)
-        col_Is_Complete = columnCheck(row, col, grid)
+        row_Is_Complete = rowCheck(row, col, gamedata['grid'])
+        col_Is_Complete = columnCheck(row, col, gamedata['grid'])
 
         # Complete? Finish
         if row_Is_Complete and col_Is_Complete:
-            finish(grid, row, col, conditions_neg, conditions_pos, cross)
+            finish(gamedata['grid'], row, col, conditions_neg, conditions_pos, cross)
         elif row_Is_Complete:
-            rowFinish(grid, row, col, conditions_neg, conditions_pos, cross)
+            rowFinish(gamedata['grid'], row, col, conditions_neg, conditions_pos, cross)
         elif col_Is_Complete:
-            columnFinish(grid, row, col, conditions_neg, conditions_pos, cross)
+            columnFinish(gamedata['grid'], row, col, conditions_neg, conditions_pos, cross)
             
     elif instruction == 0: # Multiple Rows (vertical)
         # 1 Column Check
-        if columnCheck(row, col, grid):
-            columnFinish(grid, row, col, conditions_neg, conditions_pos, cross)
+        if columnCheck(row, col, gamedata['grid']):
+            columnFinish(gamedata['grid'], row, col, conditions_neg, conditions_pos, cross)
 
         # Multiple Row Checks
         for r in range(row, endIndex+1):
-            if rowCheck(r, col, grid):
-                rowFinish(grid, r, col, conditions_neg, conditions_pos, cross)
+            if rowCheck(r, col, gamedata['grid']):
+                rowFinish(gamedata['grid'], r, col, conditions_neg, conditions_pos, cross)
                 
     elif instruction == 1: # Multiple Columns (horizontal)
         # 1 Row Check
-        if rowCheck(row, col, grid):
-            rowFinish(grid, row, col, conditions_neg, conditions_pos, cross)
+        if rowCheck(row, col, gamedata['grid']):
+            rowFinish(gamedata['grid'], row, col, conditions_neg, conditions_pos, cross)
 
         # Multiple Column Checks
         for c in range(col, endIndex+1):
-            if columnCheck(row, c, grid):
-                columnFinish(grid, row, c, conditions_neg, conditions_pos, cross)
+            if columnCheck(row, c, gamedata['grid']):
+                columnFinish(gamedata['grid'], row, c, conditions_neg, conditions_pos, cross)
         
-def play(grid, grid_check, neg, pos, cross, tiles, solution):
-    """ Call to Start Game """
+def play(gamedata, neg, pos, cross):    
+    """
+    Call to Start Game
+    """
     gameHelp()    
     patternPuzzle()
     input("\nHit Enter to Start")
-    printGrid(0, colSolutionPattern)
+    printGrid(0, colSolutionPattern, wideColBase)
     while True:
-        rowIndex, colIndex, EndIndex, instruction = input_block(grid)
-        tile_ingame = game_tile(grid)
-        if tiles == tile_ingame[1]:
-            if (tile_ingame[0] == solution).all(): # Puzzle solved
+        rowIndex, colIndex, EndIndex, instruction = input_block(gamedata['grid'])
+        tile_ingame = game_tile(gamedata['grid'])
+        if gamedata['tiles'] == tile_ingame[1]:            
+            if (tile_ingame[0] == gamedata['solutionGrid']).all():
+                # Puzzle solved
                 break
         check_block(rowIndex, colIndex, EndIndex, instruction)
-        printGrid(tile_ingame[1], colSolutionPattern)
+        printGrid(tile_ingame[1], colSolutionPattern, wideColBase)
     print("\n\nYOU WON!\n\n*Playing Exit Animation*")
 
-tiles, grid_check, grid, solution = selectLevel1()
-colSolutionPattern = np.array(columnPattern(grid_check))
-play(grid, grid_check, conditions_neg, conditions_pos, cross, tiles, solution)
+# Variables
+cross = {0: 5, 1: 1, 5:5}
+conditions_pos = {0: [False,1], 1: [False,1], 2: [False,1], 3: [False,1] , 4: [False,1] , 5: [False,1], 6: [False,1], 7: [False,1], 8: [False,1], 9: [True,0]}
+conditions_neg = {0: [True,0], 1: [False,-1], 2: [False,-1], 3: [False,-1], 4: [False,-1], 5: [False,-1], 6: [False,-1], 7: [False,-1], 8: [False,-1], 9: [False,-1]}
+
+# Read database
+cursor = loadData()
+
+# User input to query database
+number = int(input(f"Select a number between 1-{cursor.lastrowid}  "))
+gamedata = loadLevel(number, cursor)
+
+# Change to numpy array for display purposes
+gamedata['grid'] = np.array(gamedata['grid'])
+
+# Extract pattern and determine display style
+columnGrid, wideColBase = columnPattern(gamedata['grid_check'])
+colSolutionPattern = np.array(columnGrid)
+
+# Begin
+play(gamedata, conditions_neg, conditions_pos, cross)
