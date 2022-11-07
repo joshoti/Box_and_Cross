@@ -149,7 +149,7 @@ vector<string> splitString(string sentence, string delimiter = " ")
 	return words;
 }
 
-void printVector(Json::Value Row, bool extraSpacing=false)
+void printSolution(levelInfo gameData, Json::Value Row, int rowName, int orientation, bool extraSpacing = false)
 {
 	string indent1 = " ", indent2 = "  ";
 	if (extraSpacing)
@@ -157,19 +157,47 @@ void printVector(Json::Value Row, bool extraSpacing=false)
 		indent1 = "  ";
 		indent2 = "   ";
 	}
-	cout << " [ ";
-	for (auto element : Row)
-	{
-		if (element != 0) {
-			if (element < 10)
-				cout << element << indent1;
-			else
-				cout << element << " ";
+
+	// Printing Values
+	if (orientation) {
+
+		// Printing Rows
+		if (gameData.ROWIsFilled(rowName).asBool())
+			cout << " []";
+		else {
+			cout << " [ ";
+			for (auto element : Row)
+			{
+				if (element != 0) {
+					if (element < 10)
+						cout << element << indent1;
+					else
+						cout << element << " ";
+				}
+				else
+					cout << indent2;
+			}
+			cout << "]";
 		}
-		else
-			cout << indent2;
 	}
-	cout << "]";
+
+	else {
+
+		// Printing Columns
+		unordered_map<int, string> &colName = gameData.colName;
+		cout << " [ ";
+		for (int col = 0; col < (int)Row.size(); col++) {
+			if (Row[col] == 0 || gameData.COLIsFilled(col).asBool())
+				cout << indent2;
+			else {
+				if (Row[col] < 10)
+					cout << Row[col] << indent1;
+				else
+					cout << Row[col] << " ";
+			}
+		}
+		cout << "]";
+	}	
 }
 
 void printVec2(levelInfo gameData)
@@ -179,7 +207,7 @@ void printVec2(levelInfo gameData)
 	// Display In-Game Info
 	cout << "\n=========  " << gameData.tileInGame << "/" << gameData.tiles << "  =============" << endl;
 
-	// Display Names of Columns (a-j)
+	// Display Names of Columns (a-j) at the Top
 	cout << indent1;
 	for (int i = 0; i < gameData.shape; i++)
 		cout << char(i + 97) << " ";
@@ -189,25 +217,37 @@ void printVec2(levelInfo gameData)
 	int rowName = 1;
 	for (auto row : gameData.grid)
 	{
-		// Display name of Row (1-10)
+		// Display name of Row (1-10/15) on Left Hand
 		if (rowName <= 9)
 			cout << indent2 << rowName << "  ";
 		else // row is 10
 			cout << indent3 << rowName << "  ";
 
-		// Display values in row
+		// Display values in GRID
 		for (auto element : row)
 			cout << element << " "; 
 
+		// Display name of Row (1-10/15) on Right Hand
+		if (rowName <= 9)
+			cout << " " << rowName << "  ";
+		else // row is 10
+			cout << " " << rowName << " ";
+
 		// Display Row Solution Pattern
-		printVector(gameData.ROWPattern(rowName));
+		printSolution(gameData, gameData.ROWPattern(rowName), rowName, 1);
 		rowName++;
 		NEWLINE
 	}
 	NEWLINE
+	// Display Names of Columns (a-j) at the Top
+	cout << indent1;
+	for (int i = 0; i < gameData.shape; i++)
+		cout << char(i + 97) << " ";
+	NEWLINE
 
 	// Display col names if not aligned
 	if (gameData.wideBase) {
+		NEWLINE
 		cout << indent1;
 		for (int i = 0; i < gameData.shape; i++)
 			cout << char(i + 97) << "  ";
@@ -218,7 +258,7 @@ void printVec2(levelInfo gameData)
 	for (auto rowOfPatterns : gameData.colPattern)
 	{
 		cout << indent2;
-		printVector(rowOfPatterns, gameData.wideBase);
+		printSolution(gameData, rowOfPatterns, 0, 0, gameData.wideBase);
 		NEWLINE
 	}
 }
